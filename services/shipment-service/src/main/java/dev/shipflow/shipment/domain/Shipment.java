@@ -1,27 +1,53 @@
 package dev.shipflow.shipment.domain;
 
+import jakarta.persistence.*;
+
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
+@Entity
+@Table(name = "shipments")
 public class Shipment {
 
-    private final UUID id;
-    private final String sender;
-    private final String recipient;
-    private final String destinationAddress;
-    private final Instant createdAt;
+    private static final String TRACKING_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    private static final int TRACKING_LENGTH = 8;
+    private static final SecureRandom RANDOM = new SecureRandom();
+
+    @Id
+    private UUID id;
+    private String trackingNumber;
+    private String sender;
+    private String recipient;
+    private String destinationAddress;
+    @Enumerated(EnumType.STRING)
     private ShipmentStatus status;
+    private Instant createdAt;
     private Instant updatedAt;
+    @Version
+    private long version;
+
+    protected Shipment() {
+    }
 
     public Shipment(String sender, String recipient, String destinationAddress) {
         this.id = UUID.randomUUID();
+        this.trackingNumber = generateTrackingNumber();
         this.sender = Objects.requireNonNull(sender, "sender must not be null");
         this.recipient = Objects.requireNonNull(recipient, "recipient must not be null");
         this.destinationAddress = Objects.requireNonNull(destinationAddress, "destinationAddress must not be null");
         this.status = ShipmentStatus.CREATED;
         this.createdAt = Instant.now();
         this.updatedAt = this.createdAt;
+    }
+
+    private static String generateTrackingNumber() {
+        StringBuilder result = new StringBuilder("SF-");
+        for (int i = 0; i < TRACKING_LENGTH; i++) {
+            result.append(TRACKING_CHARS.charAt(RANDOM.nextInt(TRACKING_CHARS.length())));
+        }
+        return result.toString();
     }
 
     public void changeStatus(ShipmentStatus next) {
@@ -38,6 +64,10 @@ public class Shipment {
 
     public UUID getId() {
         return id;
+    }
+
+    public String getTrackingNumber() {
+        return trackingNumber;
     }
 
     public String getSender() {
@@ -62,5 +92,9 @@ public class Shipment {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public long getVersion() {
+        return version;
     }
 }
